@@ -5,9 +5,12 @@
 	</head>
 
 	<body>
-		<cfset I = ''>
-		<cfloop list="1,2,c,d">
-			flarn
-		</cfloop>
+		<cfset a = 123>
+
+		<cfoutput>
+			<cfloop list="a,b,c,d" index="a">
+			#a#
+			</cfloop>
+		</cfoutput>
 	</body>
 </html>

@@ -1,5 +1,4 @@
 /* globals require, exports */
-// jshint devel:true, curly: false, asi:true, -W084, -W061
 
 var fs = require('fs'),
 	util = require('util'),
@@ -46,6 +45,14 @@ function parse(str, line, path, evalVars){
 	processQueue(str, buf, evalVars, line, path)
 
 	return buf
+}
+
+function parseFile(path){
+	if (! cache[path]){
+		cache[path] = optimize(parse(fs.readFileSync(path, 'utf8'), 1, path))
+	}
+
+	return cache[path]
 }
 
 function processQueue(str, buf, evalVars, line, path){
@@ -210,14 +217,6 @@ function processExpression(tag, str, buf, evalVars, line, path){
 	}
 
 	return str
-}
-
-function parseFile(path){
-	if (! cache[path]){
-		cache[path] = optimize(parse(fs.readFileSync(path, 'utf8'), 1, path))
-	}
-
-	return cache[path]
 }
 
 function processAttributes(tag, str, buf, evalVars, line, path){
