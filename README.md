@@ -17,7 +17,7 @@ _xoly_ is an HTML-like scripting language like so:
 </loop>
 ```
 
-It is extensible via custom tags which can be written in _xoly_ or in _Javascript_.  Integration with _Express_ and CGIish implementations is forthcoming.
+It is extensible via custom tags which can be written in _xoly_ or in _Javascript_.
 
 
 ###Why?
