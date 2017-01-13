@@ -5,13 +5,15 @@ var fs = require('fs'),
 	tags = {
 		cfabort: require('./lib/cfabort'),
 		cfbreak: require('./lib/cfbreak'),
+		cfdump: require('./lib/cfdump'),
 		cfif: require('./lib/cfif'),
 		cfinclude: require('./lib/cfinclude'),
 		cfloop: require('./lib/cfloop'),
 		cfoutput: require('./lib/cfoutput'),
 		cfparam: require('./lib/cfparam'),
 		cfsavecontent: require('./lib/cfsavecontent'),
-		cfset: require('./lib/cfset')
+		cfset: require('./lib/cfset'),
+		cfswitch: require('./lib/cfswitch')
 	},
 	cache = {},
 	RETagOrPound = /[<#]/,
@@ -56,7 +58,6 @@ function parseFile(path){
 }
 
 function processQueue(str, buf, evalVars, line, path){
-
 	var pos = evalVars ? str.search(RETagOrPound) : str.indexOf('<') // skip to next interesting character
 
 	if (pos === -1){
@@ -178,6 +179,8 @@ function processBody(tag, str, buf, evalVars, line, path){
 		}
 		else openCount++
 	}
+
+console.log(match)
 
 	tag.body = str.substr(0, match.index)
 

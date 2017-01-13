@@ -9,7 +9,8 @@
 
 		<cfoutput>
 			<cfloop list="a,b,c,d" index="a">
-			#a#
+				#a#
+				<cfdump>
 			</cfloop>
 		</cfoutput>
 	</body>
