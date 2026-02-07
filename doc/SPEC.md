@@ -7,7 +7,7 @@
 - **Homoiconic**: Code is data, data is code
 - **Lazy by default**: Assignment captures structure, not result
 - **Domain-tagged**: Bracket type signals evaluation domain
-- **Addressable AST**: Every assigned expression is a live, mutable structure
+- **Addressable AST**: Every defined expression is a live, mutable structure
 
 ## 2. Bracket Semantics
 
@@ -45,10 +45,10 @@ pure data and pure logic can be auto-detected as const:
 
 ### 3.1 Default: Lazy + Dynamic
 
-Assignment captures the expression tree, not the result:
+`define` captures the expression tree, not the result:
 
 ```xoly
-(assign X {read-sensor 5})
+(define X {read-sensor 5})
 ; X holds the INTENT to read sensor 5
 ; each reference to X re-evaluates
 ```
@@ -59,23 +59,23 @@ Use `const` or `@fixed` to evaluate once and pin:
 
 ```xoly
 (const Y {read-sensor 5})         ; evaluates once at assignment
-(@fixed assign Z {read-sensor 5}) ; same, decorator style
+(@fixed define Z {read-sensor 5}) ; same, decorator style
 ```
 
 ### 3.3 Evaluation Policy Decorators
 
 ```xoly
 ; re-reads every time (default)
-(assign temp {read-sensor 5})
+(define temp {read-sensor 5})
 
 ; reads once
 (const temp {read-sensor 5})
 
 ; caches for 500ms
-(@throttle 500 assign temp {read-sensor 5})
+(@throttle 500 define temp {read-sensor 5})
 
 ; recomputes when dependencies change
-(@watch assign display <gauge [value: {read-sensor 5}]>)
+(@watch define display <gauge [value: {read-sensor 5}]>)
 
 ; explicit evaluation in IO context
 {eval X}
@@ -87,7 +87,7 @@ Use `const` or `@fixed` to evaluate once and pin:
 
 ```xoly
 {do
-  (assign data {read-sensor 5})
+  (define data {read-sensor 5})
   {write-log data}
   <update-display data>}
 ```
@@ -144,10 +144,10 @@ Within `{do}`, only `{}` children are strictly sequenced.
 
 ### 5.1 Structure Access
 
-Every assigned expression is an addressable node:
+Every defineed expression is an addressable node:
 
 ```xoly
-(assign X <print [A: "hello"] [B: "world"] [C: "!"]>)
+(define X <print [A: "hello"] [B: "world"] [C: "!"]>)
 
 X.0          ; → print (the verb)
 X.1          ; → [A: "hello"] (first argument, full datum)
@@ -172,7 +172,7 @@ X.1.value    ; → "hello"
 Lazy structures can be patched:
 
 ```xoly
-(assign X <print [A: "hello"] [B: "world"]>)
+(define X <print [A: "hello"] [B: "world"]>)
 (set! X_B "everyone")
 ; X is now <print [A: "hello"] [B: "everyone"]>
 {eval X}     ; prints "hello everyone"
@@ -225,7 +225,7 @@ These are **bracket reinterpretation operators** — they say
 Macros operate on the AST at expansion time:
 
 ```xoly
-(defmacro when (condition body)
+(macro when (condition body)
   (list 'if condition body 'nil))
 
 (when (> x 10) {alert "high"})
@@ -237,13 +237,13 @@ Macros operate on the AST at expansion time:
 Macros can inspect and transform bracket types:
 
 ```xoly
-(defmacro with-loading (expr)
+(macro with-loading (expr)
   (if (= (bracket-type expr) :io)
     <div <spinner> (defer expr)>
     expr))
 
 ; wraps IO in a loading spinner, passes other types through
-(with-loading {fetch-member 42})
+with-loading{fetch-member 42}
 ; expands to: <div <spinner> (defer {fetch-member 42})>
 ```
 
@@ -251,16 +251,16 @@ Macros can inspect and transform bracket types:
 
 ```xoly
 ; this macro can only produce presentation output
-<defmacro card (title content)
+<macro card (title content)
   <div [class: "card"]
     <h3 title>
     <div [class: "card-body"] content>>>
 
 ; this macro can only produce IO output
-{defmacro with-retry (n expr)
+{macro with-retry (n expr)
   {do
-    (assign attempts 0)
-    (assign result nil)
+    (define attempts 0)
+    (define result nil)
     {while (and (< attempts n) (nil? result))
       {try
         (set! result expr)
@@ -270,7 +270,7 @@ Macros can inspect and transform bracket types:
 
 ## 8. Operators
 
-**TODO** Custom operators are always prefixed with `~`.  They are element assigned to a name.  Element following the operator name are passed as its arguments.  e.g. `~vec-add [1, 2] [3, 4]` would invoke the `~vec-add` operator with the two vectors as arguments.
+**TODO** Custom operators are always prefixed with `~`.  They are element defineed to a name.  Element following the operator name are passed as its arguments.  e.g. `~vec-add [1, 2] [3, 4]` would invoke the `~vec-add` operator with the two vectors as arguments.
 
 ### 8.1 Built-in Operators
 
@@ -295,10 +295,10 @@ Standard prefix operators:
 ### 8.2 User-Defined Operators
 
 ```xoly
-(defop |> (val fn)       ; pipe operator
+(operator |> (val fn)       ; pipe operator
   (fn val))
 
-(defop ?? (val default)  ; null coalesce
+(operator ?? (val default)  ; null coalesce
   (if (nil? val) default val))
 
 ; usage
@@ -359,7 +359,7 @@ nil
 (if (> x 0) "positive" "non-positive")
 
 ; multi-branch
-(cond
+(condition
   (< x 0)  "negative"
   (= x 0)  "zero"
   true      "positive")
@@ -387,39 +387,26 @@ nil
 
 ## 11. Error Handling
 
+**TODO** no try/catch ~ elements all resolve to some value which the parent element is responsible for handling.  Better to have built-in status objects for malformed elements, runtime errors, and domain-specific errors.
+
 ```xoly
-{try
-  {read-sensor 5}
-  (catch IOError e
-    {log (concat "Sensor error: " (get e :message))}
-    [value: 0, error: true])
-  (finally
-    {release-sensor 5})}
 ```
 
 ## 12. Module System
 
+**TODO** Modules are implicit: each file in the project is a module.  Every file name `*.xoly` is a module.  Modules can be imported with `import` statements.  Namespaces correspond to the directory structure.  Circular dependencies are pruned.
+
 ```xoly
-; define a module
-(module sensors
-  (export read-calibrated write-reading)
-
-  [calibration-offset: 0.05]
-
-  (defn read-calibrated (sensor-id)
-    (- {read-sensor sensor-id} calibration-offset))
-
-  {defproc write-reading (sensor-id)
-    {db-insert [value: (read-calibrated sensor-id)]}})
-
 ; import
-(import sensors [read-calibrated])
+(import sensors ../adjacent/directory/sensors)
 (import sensors :all)
 ```
 
 ## 13. Example Programs
 
 ### 13.1 Sensor Dashboard
+
+**TODO** Rewrite these after fixing the above issues.
 
 ```xoly
 (module dashboard
@@ -459,9 +446,9 @@ nil
 
   {defproc run-pipeline ()
     {do
-      (assign raw {query "SELECT * FROM readings WHERE status = 'new'"})
-      (assign processed (map process-record raw))
-      (assign valid (filter (fn (r) (not (get r :error))) processed))
+      (define raw {query "SELECT * FROM readings WHERE status = 'new'"})
+      (define processed (map process-record raw))
+      (define valid (filter (fn (r) (not (get r :error))) processed))
       {for record in valid
         {insert "processed_readings" record}}
       {log (concat "Processed " (str (len valid)) " records")}}})
