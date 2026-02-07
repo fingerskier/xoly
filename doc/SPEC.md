@@ -180,6 +180,9 @@ Lazy structures can be patched:
 
 ## 6. Decorators
 
+**TODO** this section needs work.  Decorators are, indeed, bracket modifiers- they are middleman functions that receive the given element and return a modified version of it.
+**TODO** decorators are functions that operate on the given element.  Decorators are always `@`-prefixed.
+
 ### 6.1 Standard Decorators
 
 Decorators modify evaluation policy:
@@ -213,6 +216,9 @@ These are **bracket reinterpretation operators** — they say
 "evaluate this block, but apply additional rules from the target domain."
 
 ## 7. Macros
+
+**TODO** Macro syntax causes an element to be handled as data rather than being evaluated.  When a macro is invoked the result is a new element that gets evaluated in that place.
+**TODO** Macros are surrounded by tick marks `<element>`.
 
 ### 7.1 Basic Macros
 
@@ -263,6 +269,8 @@ Macros can inspect and transform bracket types:
 ```
 
 ## 8. Operators
+
+**TODO** Custom operators are always prefixed with `~`.  They are element assigned to a name.  Element following the operator name are passed as its arguments.  e.g. `~vec-add [1, 2] [3, 4]` would invoke the `~vec-add` operator with the two vectors as arguments.
 
 ### 8.1 Built-in Operators
 
