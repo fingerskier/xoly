@@ -1,4 +1,4 @@
-# Quartic Language Specification (Working Draft)
+# Xoly Language Specification (Working Draft)
 
 *A Lisp dialect with four semantic bracket types*
 
@@ -22,19 +22,19 @@
 
 Brackets nest freely. The nesting pattern forms an implicit effect signature:
 
-```quartic
+```xoly
 <div {fetch-user [id]}>     ; presentation → IO → data
 (if (> x 0) {write x})      ; logic → logic → IO
 ```
 
 A linter/compiler can analyze nesting depth and patterns for warnings.
 
-### 2.2 Implied Constness
+### 2.2 Implied Constancy
 
 `[]` data blocks are **inherently const**. Expressions that bottom out in
 pure data and pure logic can be auto-detected as const:
 
-```quartic
+```xoly
 [1, 2, 3]                   ; const — pure data
 (+ 1 2)                     ; const-eligible — pure logic, literal inputs
 {read-sensor 5}             ; NOT const — contains IO
@@ -47,7 +47,7 @@ pure data and pure logic can be auto-detected as const:
 
 Assignment captures the expression tree, not the result:
 
-```quartic
+```xoly
 (assign X {read-sensor 5})
 ; X holds the INTENT to read sensor 5
 ; each reference to X re-evaluates
@@ -57,14 +57,14 @@ Assignment captures the expression tree, not the result:
 
 Use `const` or `@fixed` to evaluate once and pin:
 
-```quartic
+```xoly
 (const Y {read-sensor 5})         ; evaluates once at assignment
 (@fixed assign Z {read-sensor 5}) ; same, decorator style
 ```
 
 ### 3.3 Evaluation Policy Decorators
 
-```quartic
+```xoly
 ; re-reads every time (default)
 (assign temp {read-sensor 5})
 
@@ -85,7 +85,7 @@ Use `const` or `@fixed` to evaluate once and pin:
 
 `{do ...}` forces sequential evaluation of IO:
 
-```quartic
+```xoly
 {do
   (assign data {read-sensor 5})
   {write-log data}
@@ -99,7 +99,7 @@ Within `{do}`, only `{}` children are strictly sequenced.
 
 ### 4.1 Functions (Logic Domain)
 
-```quartic
+```xoly
 (defn factorial (n)
   (if (= n 0) 1 (* n (factorial (- n 1)))))
 
@@ -109,7 +109,7 @@ Within `{do}`, only `{}` children are strictly sequenced.
 
 ### 4.2 Procedures (IO Domain)
 
-```quartic
+```xoly
 {defproc fetch-member (id)
   {http-get (concat "/api/members/" [id])}}
 
@@ -121,7 +121,7 @@ Within `{do}`, only `{}` children are strictly sequenced.
 
 ### 4.3 Views (Presentation Domain)
 
-```quartic
+```xoly
 <defview member-card (member)
   <div
     <h2 (get member :name)>
@@ -132,7 +132,7 @@ Within `{do}`, only `{}` children are strictly sequenced.
 
 ### 4.4 Data Schemas (Data Domain)
 
-```quartic
+```xoly
 [defschema sensor-reading
   [id: Int]
   [sensor-id: Int]
@@ -146,7 +146,7 @@ Within `{do}`, only `{}` children are strictly sequenced.
 
 Every assigned expression is an addressable node:
 
-```quartic
+```xoly
 (assign X <print [A: "hello"] [B: "world"] [C: "!"]>)
 
 X.0          ; → print (the verb)
@@ -160,7 +160,7 @@ X.length     ; → 4 (verb + 3 args)
 
 Arguments carrying data keys support named access:
 
-```quartic
+```xoly
 X_A          ; → "hello" (value of datum keyed A)
 X_B          ; → "world"
 X.1.key      ; → A
@@ -171,7 +171,7 @@ X.1.value    ; → "hello"
 
 Lazy structures can be patched:
 
-```quartic
+```xoly
 (assign X <print [A: "hello"] [B: "world"]>)
 (set! X_B "everyone")
 ; X is now <print [A: "hello"] [B: "everyone"]>
@@ -184,7 +184,7 @@ Lazy structures can be patched:
 
 Decorators modify evaluation policy:
 
-```quartic
+```xoly
 @fixed       ; evaluate once, pin result
 @watch       ; re-evaluate on dependency change
 @throttle N  ; cache result for N milliseconds
@@ -198,7 +198,7 @@ Decorators modify evaluation policy:
 
 `@<`, `@{`, `@()`, `@[]` reinterpret a block under another domain's rules:
 
-```quartic
+```xoly
 ; IO block with presentation rules (auto-format output)
 @<{read-sensor 5}
 
@@ -218,7 +218,7 @@ These are **bracket reinterpretation operators** — they say
 
 Macros operate on the AST at expansion time:
 
-```quartic
+```xoly
 (defmacro when (condition body)
   (list 'if condition body 'nil))
 
@@ -230,7 +230,7 @@ Macros operate on the AST at expansion time:
 
 Macros can inspect and transform bracket types:
 
-```quartic
+```xoly
 (defmacro with-loading (expr)
   (if (= (bracket-type expr) :io)
     <div <spinner> (defer expr)>
@@ -243,7 +243,7 @@ Macros can inspect and transform bracket types:
 
 ### 7.3 Domain-Restricted Macros
 
-```quartic
+```xoly
 ; this macro can only produce presentation output
 <defmacro card (title content)
   <div [class: "card"]
@@ -268,7 +268,7 @@ Macros can inspect and transform bracket types:
 
 Standard prefix operators:
 
-```quartic
+```xoly
 ; arithmetic
 (+ 1 2)  (- 5 3)  (* 2 4)  (/ 10 2)  (% 7 3)
 
@@ -286,7 +286,7 @@ Standard prefix operators:
 
 ### 8.2 User-Defined Operators
 
-```quartic
+```xoly
 (defop |> (val fn)       ; pipe operator
   (fn val))
 
@@ -302,7 +302,7 @@ Standard prefix operators:
 
 ### 9.1 Literals
 
-```quartic
+```xoly
 ; numbers
 42  3.14  -17  0xFF
 
@@ -321,7 +321,7 @@ nil
 
 ### 9.2 Collections
 
-```quartic
+```xoly
 ; list (ordered)
 [1, 2, 3, 4]
 
@@ -337,7 +337,7 @@ nil
 
 ### 9.3 Schema-Validated Data
 
-```quartic
+```xoly
 [defschema Point [x: Float] [y: Float]]
 
 ; creates a validated Point
@@ -346,7 +346,7 @@ nil
 
 ## 10. Control Flow
 
-```quartic
+```xoly
 ; conditional
 (if (> x 0) "positive" "non-positive")
 
@@ -379,7 +379,7 @@ nil
 
 ## 11. Error Handling
 
-```quartic
+```xoly
 {try
   {read-sensor 5}
   (catch IOError e
@@ -391,7 +391,7 @@ nil
 
 ## 12. Module System
 
-```quartic
+```xoly
 ; define a module
 (module sensors
   (export read-calibrated write-reading)
@@ -413,7 +413,7 @@ nil
 
 ### 13.1 Sensor Dashboard
 
-```quartic
+```xoly
 (module dashboard
   (import sensors [read-calibrated])
   (import ui [gauge, card, grid])
@@ -437,7 +437,7 @@ nil
 
 ### 13.2 Data Pipeline
 
-```quartic
+```xoly
 (module pipeline
   (import db [query, insert])
   (import transform [normalize, validate])
