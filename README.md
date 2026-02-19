@@ -1,76 +1,69 @@
 # xoly
-# Quartic
+A client/server language
 
-A Lisp dialect with four semantic bracket types for domain-tagged expressions.
+## Concepts
 
-| Bracket | Domain       | Behavior        |
-|---------|-------------|-----------------|
-| `( )`   | Logic       | Pure computation |
-| `[ ]`   | Data        | Const literals   |
-| `{ }`   | IO          | Side effects     |
-| `< >`   | Presentation | Rendering/UI    |
+It has spreadsheetish sort of structure.
+Individual modules are "cells" that are aggregated into "sheets" which are part of a "book".
 
-## Quick Start
+Cells, columns, rows, sheets, and books can all be named and have their own metadata.
 
-```bash
-# Run test suite
-node cli.js test
-
-# Transpile a file
-node cli.js transpile example.q --target=js
-node cli.js transpile example.q --target=python
-
-# Dump AST
-node cli.js ast example.q
-
-# Generate synthetic training data
-node cli.js generate --count=1000 --format=jsonl --output=train.jsonl
-node cli.js generate --count=500 --format=pairs --target=js --output=pairs.json
+Project structure:
+```
+mybook/
+  sheet1.xoly
+  ~ cells are defined in the sheet text-file
+  sheet2.xoly
+  ...
+another-book/
+  sheet1.xoly
+  ...
 ```
 
-## Example
+## Syntax
 
-```quartic
-(module dashboard
-  (import sensors [read-calibrated])
+`[`, `]` - range selector
 
-  <defview gauge-card (sensor-id)
-    <card [title: (concat "Sensor " (str sensor-id))]
-      <gauge [value: {read-calibrated sensor-id}]
-             [min: 0] [max: 100]>>>
+`{`, `}` - exectuable block delimiters
 
-  {defproc run ()
-    {do
-      (assign readings (map read-calibrated [1, 2, 3]))
-      {write-log (concat "Read " (str (len readings)) " sensors")}
-      <grid (map gauge-card [1, 2, 3])>}})
-```
+`(`, `)` - data grouping delimiters
 
-## Files
+`_` - "me": the current cell
+* `_row` - this cell's row
+* `_col` - this cell's column
+* `_sheet` - this cell's sheet
+* `_book` - this cell's book
+* `_???` - these are named outputs of the current cell
 
-```
-SPEC.md                   Language specification
-cli.js                    CLI entry point
-src/
-  tokenizer.js            Four-bracket-aware tokenizer
-  parser.js               AST builder with domain tags
-  transpile-js.js         JavaScript target
-  transpile-py.js         Python target
-  generate.js             Synthetic data generator (29 patterns)
-training_data.jsonl       500 generated samples (JSONL)
-training_pairs_js.json    200 prompt/completion pairs (JS target)
-training_pairs_py.json    200 prompt/completion pairs (Python target)
-```
+`.` - decimal point
+`-` - member access operator
+`:` - hierarchy separator
+`@` - reference to a named entity
 
-## Training Data Generation
+e.g. `@sheet1:cellA1` - reference to cellA1 in sheet1~ it is implied that the current book is being referenced
+e.g. `@book1:sheet1:cellA1` - same as above if the current book is `book1`, explicitly names the book
+e.g. `@sheet1[4,3]` - reference to the cell at row 4, column 3 in sheet1 (current book implied)
+e.g. `{ @pi=3.14 }` - executable block that assigns the value 3.14 to the named entity `pi`~ there must be a cell named `pi` in the current sheet or book
+e.g. 
 
-The generator includes 29 pattern templates covering:
-- Arithmetic, comparisons, conditionals
-- Data literals (lists, maps, nested)
-- Function definitions (pure, IO, views)
-- Control flow (for, while, do blocks)
-- Decorators and bracket enhancements
-- Pipelines and higher-order functions
-- Error handling, modules, schema definitions
+`=` - assignment operator
 
-Each sample produces a Quartic source string paired with JS and Python transpilations.
+`#` - comment delimiter
+
+### Comparisons
+
+`eq` - equality
+`ne` - not equal
+`lt` - less than
+`le` - less than or equal
+`gt` - greater than
+`ge` - greater than or equal
+
+## Runtime
+
+Each cell has inputs and outputs.
+When the program ticks it updates all cells with new inputs, in order (top to bottom, left to right), then cells with new outputs, in order (top to bottom, left to right).
+Inputs are any properties of other named entities
+* e.g. `@cellA1.value`
+Outputs are properties of the current cell
+* e.g. `_value`
